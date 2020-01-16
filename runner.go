@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -16,13 +17,39 @@ type Njob struct {
 }
 
 type Runner struct {
-	NomadClient  *api.Client
-	JobsPath     string
-	Dependencies []Njob
+	NomadRunner        *NomadRunner
+	JobsPath           string
+	Dependencies       []Njob
+	DependencyFilePath string
 }
 
-func (r *Runner) get_dependency(currentJob string, body gjson.Result) []Njob {
+func NewRunner(nomadConfig *api.Config, dependencyFile string, jobsPath string) (*Runner, error) {
+	// Create Nomad client
+	nomadRunner, err := NewNomadRunner(nomadConfig)
+	if err != nil {
+		log.Fatalf("error creating nomad runner: %+v", err)
+		return nil, err
+	}
+
+	return &Runner{
+		NomadRunner:        nomadRunner,
+		JobsPath:           jobsPath,
+		DependencyFilePath: dependencyFile,
+	}, nil
+}
+
+func (r *Runner) _dependency(currentJob string, body gjson.Result, idx int) ([]Njob, error) {
 	var jobs []Njob
+
+	// NOTE: Infinite recursion
+	if idx == 0 {
+		return nil, errors.New("Infinite recursion")
+	}
+
+	// Missing dependency
+	if len(body.Get(currentJob).Map()) == 0 {
+		return nil, errors.New(fmt.Sprintf("Missing dependency: %s", currentJob))
+	}
 
 	currentJobWait := body.Get(fmt.Sprintf("%s.wait_cond", currentJob))
 	preJob := body.Get(fmt.Sprintf("%s.pre.job", currentJob))
@@ -31,34 +58,62 @@ func (r *Runner) get_dependency(currentJob string, body gjson.Result) []Njob {
 
 	if preJob.Str == "" {
 		if postJob.Str == "" {
-			return append(jobs, Njob{Job: currentJob, Wait: currentJobWait.Int()})
+			return append(jobs, Njob{Job: currentJob, Wait: currentJobWait.Int()}), nil
 		}
 		return append(jobs, Njob{Job: currentJob, Wait: currentJobWait.Int()},
-			Njob{Job: postJob.Str, Wait: postJobWait.Int()})
+			Njob{Job: postJob.Str, Wait: postJobWait.Int()}), nil
 	}
 
-	t := r.get_dependency(preJob.Str, body)
+	t, err := r._dependency(preJob.Str, body, (idx - 1))
+	if err != nil {
+		return nil, err
+	}
 	t = append(t, Njob{Job: currentJob, Wait: currentJobWait.Int()})
 	if postJob.Str != "" {
-		return append(t, Njob{Job: postJob.Str, Wait: postJobWait.Int()})
+		return append(t, Njob{Job: postJob.Str, Wait: postJobWait.Int()}), nil
 	}
-	return t
+
+	return t, nil
 }
 
-func (r *Runner) run_tree(job string, dependencies []byte) error {
-	// Validate Json
-	jobs := r.get_dependency(job, gjson.Get(string(dependencies), "dependencies"))
+func (r *Runner) get_dependency(currentJob string) ([]Njob, error) {
+	// Read the dependency JSON file
+	dependencies, err := ioutil.ReadFile(r.DependencyFilePath)
+	if err != nil {
+		log.Fatalf("error reading file: %+v", err)
+		return nil, err
+	}
+
+	return r._dependency(currentJob,
+		gjson.Get(string(dependencies), "dependencies"), 5)
+}
+
+func (r *Runner) run_tree(job string) error {
+	// Get all dependencies of the job
+	jobs, err := r.get_dependency(job)
+	if err != nil {
+		log.Fatalf("error generarting dependency: %+v", err)
+		return err
+	}
+
 	for idx, j := range jobs {
 		log.Printf("Run job: %+v", j.Job)
 
-		skip_wait, err := r.run_job(j.Job)
+		nomadJob, err := ioutil.ReadFile(fmt.Sprintf("%s/%s.nomad", r.JobsPath, j.Job))
+		if err != nil {
+			log.Fatalf("error reading file: %+v", err)
+			return err
+		}
+
+		skip_wait, err := r.NomadRunner.run(nomadJob)
 		if err != nil {
 			log.Printf("Error running job: %+v", err)
 			return err
 		}
 
-		log.Printf("status %+v", skip_wait)
+		log.Printf("Job Status %+v", skip_wait)
 		if !skip_wait {
+			// If last job is submitted no need to wait
 			if !(idx == len(jobs)-1) {
 				log.Printf("Wait for %+v seconds", j.Wait)
 				time.Sleep(time.Duration(j.Wait) * time.Second)
@@ -69,35 +124,4 @@ func (r *Runner) run_tree(job string, dependencies []byte) error {
 	}
 
 	return nil
-}
-
-func (r *Runner) run_job(jobName string) (bool, error) {
-	nomadJob, err := ioutil.ReadFile(fmt.Sprintf("%s/%s.nomad", r.JobsPath, jobName))
-	if err != nil {
-		log.Fatalf("error reading file: %+v", err)
-		return false, err
-	}
-
-	jobs := r.NomadClient.Jobs()
-	njob, err := jobs.ParseHCL(string(nomadJob), true)
-	if err != nil {
-		log.Printf("error while parsing job hcl: %+v", err)
-		return false, err
-	}
-
-	info, _, err := jobs.Info(*njob.ID, &api.QueryOptions{})
-	if err != nil {
-		//NOTE: Handle 404 status code
-		log.Printf("Error getting job info: %+v", err)
-	} else if *info.Status == Running {
-		return true, nil
-	}
-
-	resp, _, err := jobs.Register(njob, nil)
-	if err != nil {
-		log.Fatalf("error registering jobs: %+v", err)
-	}
-	log.Printf("Success Reponse: %+v", resp)
-
-	return false, nil
 }
