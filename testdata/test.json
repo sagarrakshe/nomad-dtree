@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "api": {
+      "wait_cond": 2,
+      "pre": {
+        "job": "postgres"
+      }
+    },
+    "postgres": {
+      "wait_cond": 1
+    }
+  }
+}

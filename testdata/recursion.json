@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "nginx": {
+      "wait_cond": 3,
+      "pre": {
+        "job": "api"
+      }
+    },
+    "api": {
+      "wait_cond": 2,
+      "pre": {
+        "job": "postgres"
+      }
+    },
+    "postgres": {
+      "wait_cond": 1,
+      "pre": {
+        "job": "nginx"
+      }
+    }
+  }
+}
