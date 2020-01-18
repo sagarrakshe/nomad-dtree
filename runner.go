@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"time"
 
@@ -17,13 +16,12 @@ type Njob struct {
 }
 
 type Runner struct {
-	NomadRunner        *NomadRunner
-	JobsPath           string
-	Dependencies       []Njob
-	DependencyFilePath string
+	NomadRunner  *NomadRunner
+	Dependencies []Njob
+	StoreClient  Store
 }
 
-func NewRunner(nomadConfig *api.Config, dependencyFile string, jobsPath string) (*Runner, error) {
+func NewRunner(nomadConfig *api.Config, storeConfig *StoreConfig) (*Runner, error) {
 	// Create Nomad client
 	nomadRunner, err := NewNomadRunner(nomadConfig)
 	if err != nil {
@@ -31,10 +29,15 @@ func NewRunner(nomadConfig *api.Config, dependencyFile string, jobsPath string) 
 		return nil, err
 	}
 
+	storeClient, err := NewStoreClient(storeConfig)
+	if err != nil {
+		log.Fatalf("error creating store client: %+v", err)
+		return nil, err
+	}
+
 	return &Runner{
-		NomadRunner:        nomadRunner,
-		JobsPath:           jobsPath,
-		DependencyFilePath: dependencyFile,
+		NomadRunner: nomadRunner,
+		StoreClient: storeClient,
 	}, nil
 }
 
@@ -78,14 +81,13 @@ func (r *Runner) _dependency(currentJob string, body gjson.Result, idx int) ([]N
 
 func (r *Runner) get_dependency(currentJob string) ([]Njob, error) {
 	// Read the dependency JSON file
-	dependencies, err := ioutil.ReadFile(r.DependencyFilePath)
+	dep, err := r.StoreClient.GetDependencies()
 	if err != nil {
-		log.Fatalf("error reading file: %+v", err)
 		return nil, err
 	}
 
 	return r._dependency(currentJob,
-		gjson.Get(string(dependencies), "dependencies"), 5)
+		gjson.Get(string(dep), "dependencies"), 50)
 }
 
 func (r *Runner) run_tree(job string) error {
@@ -99,7 +101,7 @@ func (r *Runner) run_tree(job string) error {
 	for idx, j := range jobs {
 		log.Printf("Run job: %+v", j.Job)
 
-		nomadJob, err := ioutil.ReadFile(fmt.Sprintf("%s/%s.nomad", r.JobsPath, j.Job))
+		nomadJob, err := r.StoreClient.GetJob(j.Job)
 		if err != nil {
 			log.Fatalf("error reading file: %+v", err)
 			return err
