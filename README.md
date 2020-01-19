@@ -51,7 +51,7 @@ Run nomad on your local machine. If the nomad address is different from http://l
 Download the nomad-dtree binary from [here](https://github.com/sagarrakshe/nomad-dtree/releases/download/v1.0.0/nomad-dtree).
 
 ```
-$ wget https://github.com/sagarrakshe/nomad-dtree/releases/download/v1.0.0/nomad-dtree -O /tmp/nomad-dtree
+$ wget https://github.com/sagarrakshe/nomad-dtree/releases/download/v1.0.0/nomad-dtree -O /tmp/nomad-dtree && chmod +x /tmp/nomad-dtree
 $ cd examples
 $ bash run.sh
 ```
