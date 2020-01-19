@@ -44,8 +44,8 @@ func main() {
 		ConsulAddr:     *consulAddr,
 		ConsulDepPath:  *consulDepFilepath,
 		ConsulJobsPath: *consulJobsPath,
-		FsJobsPath:     *fsDepFilepath,
-		FsDepPath:      *fsJobsPath,
+		FsDepPath:      *fsDepFilepath,
+		FsJobsPath:     *fsJobsPath,
 	}
 
 	runner, err := NewRunner(config, storeConfig)
