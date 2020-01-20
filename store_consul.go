@@ -31,10 +31,11 @@ func NewConsulClient(config *StoreConfig) (*Consul, error) {
 
 func (c *Consul) GetJob(job string) ([]byte, error) {
 	kv := c.Client.KV()
-	njob, _, err := kv.Get(fmt.Sprintf("%s/%s", c.JobsPath, job), &api.QueryOptions{})
+	njob, _, err := kv.Get(fmt.Sprintf("%s/%s.nomad", c.JobsPath, job), &api.QueryOptions{})
 	if err != nil {
 		return nil, err
 	}
+	// NOTE Add validation
 	return njob.Value, nil
 }
 
@@ -45,5 +46,6 @@ func (c *Consul) GetDependencies() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	// NOTE Add validation
 	return njob.Value, nil
 }

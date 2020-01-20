@@ -27,6 +27,8 @@ var (
 )
 
 func main() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	config := &api.Config{
