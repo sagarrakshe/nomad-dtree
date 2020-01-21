@@ -6,7 +6,6 @@ go:
 
 before_install:
   - gimme 1.12
-  - go clean -modcache
   - export GOROOT=/home/travis/.gimme/versions/go1.12.9.linux.amd64
   - wget -qO- https://releases.hashicorp.com/consul/1.6.2/consul_1.6.2_linux_amd64.zip | zcat >> /tmp/consul
   - chmod +x /tmp/consul && /tmp/consul agent -dev
