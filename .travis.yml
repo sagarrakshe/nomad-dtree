@@ -1,0 +1,10 @@
+language: generic
+sudo: true
+dist: xenial
+go:
+  - 1.13
+env:
+- GO111MODULE=on
+
+script:
+  make test
