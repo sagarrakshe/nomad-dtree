@@ -1,6 +1,9 @@
 
 nomad-dtree
 ===========
+
+[![Build Status](https://travis-ci.org/sagarrakshe/nomad-dtree.png?branch=master)](https://travis-ci.org/sagarrakshe/nomad-dtree)
+
 Nomad doesn't have its own dependency management plugin between the jobs. 
 Especially with rise in the microservices pattern, it becomes difficult to maintain order of deployment using Nomad.
 For eg. Database service must be up before the api service is started.
