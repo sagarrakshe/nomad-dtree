@@ -6,5 +6,12 @@ go:
 env:
 - GO111MODULE=on
 
+before_install:
+  - |
+    gimme 1.12
+    go clean -modcache
+
 script:
-  make test
+  - |
+    export GOPATH=$HOME/gopath
+    make test
