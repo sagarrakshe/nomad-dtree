@@ -3,7 +3,7 @@
 CONSUL_ADDR="http://localhost:8500"
 NOMAD_ADDR="http://localhost:4646"
 
-if [[ ! -z /tmp/nomad-dtree ]]
+if [[ ! -f /tmp/nomad-dtree ]]
 then
   wget https://github.com/sagarrakshe/nomad-dtree/releases/download/v1.0.0/nomad-dtree -O \
     /tmp/nomad-dtree && \
