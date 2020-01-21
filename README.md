@@ -95,4 +95,4 @@ The order of execution will be as follows:
 ```
 postgres.nomad -> postgres_setup.nomad -> api.nomad -> nginx.nomad
 ```
-For more examples check  [Examples](!https://github.com/sagarrakshe/nomad-dtree/tree/master/examples)
+For more examples check  [Examples](https://github.com/sagarrakshe/nomad-dtree/tree/master/examples)
