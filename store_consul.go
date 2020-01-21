@@ -41,7 +41,6 @@ func (c *Consul) GetJob(job string) ([]byte, error) {
 
 func (c *Consul) GetDependencies() ([]byte, error) {
 	kv := c.Client.KV()
-	log.Print(c.DepFilepath)
 	njob, _, err := kv.Get(c.DepFilepath, &api.QueryOptions{})
 	if err != nil {
 		return nil, err
