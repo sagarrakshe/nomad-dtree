@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "postgres": {
+      "post": {
+        "job": "postgres_setup",
+        "wait_cond": 3
+      },
+      "wait_cond": 5
+    }
+  }
+}
