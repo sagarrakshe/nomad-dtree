@@ -15,23 +15,23 @@ The dependencies are defined in JSON format. Check [Sample dependecy json ](http
 
 ```
 {
-	"dependencies": {
-		"nginx": {
-			"wait_cond": 5,
-			"pre": {
-				"job": "api"
-			}
-		},
-		"api": {
-			"wait_cond": 7,
-			"pre": {
-				"job": "redis"
-			}
-		},
-		"redis": {
-			"wait_cond": 5
-		}
-	}
+  "dependencies": {
+    "nginx": {
+      "wait_cond": 5,
+        "pre": {
+	  "job": "api"
+	  }
+	},
+    "api": {
+      "wait_cond": 7,
+      "pre": {
+        "job": "redis"
+      }
+    },
+    "redis": {
+      "wait_cond": 5
+    }
+  }
 }
 ```
 The `wait_cond` denotes the wait time before running the next job.
