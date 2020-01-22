@@ -18,7 +18,9 @@ func populate_consul(sc *StoreConfig) error {
 	}
 
 	kv := c.Client.KV()
-	for _, f := range []string{"test.json", "recursion.json", "missing_dependency.json"} {
+	for _, f := range []string{"test.json", "recursion.json",
+		"missing_dependency.json"} {
+
 		file, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s", f))
 		if err != nil {
 			return err
@@ -33,6 +35,9 @@ func populate_consul(sc *StoreConfig) error {
 }
 
 func TestRunner(t *testing.T) {
+	cmd := &CmdConfig{
+		Command: "run",
+	}
 	t.Run("Test Filesystem", func(t *testing.T) {
 		sc := &StoreConfig{
 			Driver:     "filesystem",
@@ -41,7 +46,7 @@ func TestRunner(t *testing.T) {
 
 		t.Run("Test job dependency order", func(t *testing.T) {
 			sc.FsDepPath = "testdata/test.json"
-			runner, err := NewRunner(api.DefaultConfig(), sc)
+			runner, err := NewRunner(api.DefaultConfig(), sc, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -57,7 +62,7 @@ func TestRunner(t *testing.T) {
 
 		t.Run("Test cyclic job dependency", func(t *testing.T) {
 			sc.FsDepPath = "testdata/recursion.json"
-			runner, err := NewRunner(api.DefaultConfig(), sc)
+			runner, err := NewRunner(api.DefaultConfig(), sc, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -69,7 +74,7 @@ func TestRunner(t *testing.T) {
 
 		t.Run("Test fail when dependent job doesn't exists", func(t *testing.T) {
 			sc.FsDepPath = "testdata/missing_dependency.json"
-			runner, err := NewRunner(api.DefaultConfig(), sc)
+			runner, err := NewRunner(api.DefaultConfig(), sc, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -93,7 +98,7 @@ func TestRunner(t *testing.T) {
 
 		t.Run("Test job dependency order", func(t *testing.T) {
 			sc.ConsulDepPath = "test.json"
-			runner, err := NewRunner(api.DefaultConfig(), sc)
+			runner, err := NewRunner(api.DefaultConfig(), sc, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -109,7 +114,7 @@ func TestRunner(t *testing.T) {
 
 		t.Run("Test cyclic job dependency", func(t *testing.T) {
 			sc.ConsulDepPath = "recursion.json"
-			runner, err := NewRunner(api.DefaultConfig(), sc)
+			runner, err := NewRunner(api.DefaultConfig(), sc, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -121,7 +126,7 @@ func TestRunner(t *testing.T) {
 
 		t.Run("Test fail when dependent job doesn't exists", func(t *testing.T) {
 			sc.ConsulDepPath = "missing_dependency.json"
-			runner, err := NewRunner(api.DefaultConfig(), sc)
+			runner, err := NewRunner(api.DefaultConfig(), sc, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
