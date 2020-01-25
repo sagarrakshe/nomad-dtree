@@ -9,7 +9,7 @@ Especially with rise in the microservices pattern, it becomes difficult to maint
 For eg. Database service must be up before the api service is started.
 The order of deployment of the jobs has to be handled separately, using some external tool like Rundeck.
 
-Nomad also lacks feature or post/pre hook. (Check issue: [https://github.com/hashicorp/nomad/issues/419](https://github.com/hashicorp/nomad/issues/419) and [https://github.com/hashicorp/nomad/issues/2851](https://github.com/hashicorp/nomad/issues/2851)).
+Nomad also lacks feature of post/pre hook. (Check issue: [https://github.com/hashicorp/nomad/issues/419](https://github.com/hashicorp/nomad/issues/419) and [https://github.com/hashicorp/nomad/issues/2851](https://github.com/hashicorp/nomad/issues/2851)).
 Many of services a pre-setup step or a post setup.
 For example, when we run a postgres or any db container, we need to create a user, db and grant permissions.
 Another example, on bringing up a rabbitmq cluster we might need to create vhost, user etc.
@@ -86,6 +86,7 @@ Now, when we run the following command:
 
 ```
 nomad-dtree \
+  run \
   --job nginx \  (note we are submitting nginx job here)
   --server-addr <nomad-address> \
   --store filesystem \
@@ -98,4 +99,20 @@ The order of execution will be as follows:
 ```
 postgres.nomad -> postgres_setup.nomad -> api.nomad -> nginx.nomad
 ```
+
+Similar to `run` you can also `stop` the jobs.
+Stop command has two flags:
+
+- purge (optional): When used, Job will be purged from the system.
+- deep (optional): When used, the mentioned job and all the dependent child jobs will be stopped.
+
+```
+nomad-dtree \
+	stop --purge --deep \
+  --server-addr <nomad-address> \
+  --store filesystem \
+  --fs-depfile-path <path to dependency json file> \
+  --fs-jobs-path <path to directory containing all nomad jobs>
+```
+
 For more examples check  [Examples](https://github.com/sagarrakshe/nomad-dtree/tree/master/examples)

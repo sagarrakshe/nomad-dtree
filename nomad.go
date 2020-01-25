@@ -51,6 +51,20 @@ func (n *NomadRunner) run(job []byte) (bool, error) {
 	return false, nil
 }
 
-func (n *NomadRunner) stop() (bool, error) {
-	return false, nil
+func (n *NomadRunner) stop(job []byte, purge bool) (bool, error) {
+	jobs := n.NomadClient.Jobs()
+	njob, err := jobs.ParseHCL(string(job), true)
+	if err != nil {
+		log.Printf("error while parsing job hcl: %+v", err)
+		return false, err
+	}
+
+	jId, _, err := jobs.Deregister(*njob.ID, purge, &api.WriteOptions{})
+	if err != nil {
+		log.Printf("error stopping the job: %+v", err)
+		return false, err
+	}
+
+	log.Printf("Stopped Job: %+v - %+v", *njob.Name, jId)
+	return true, nil
 }

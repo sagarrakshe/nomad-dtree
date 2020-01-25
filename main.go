@@ -4,20 +4,26 @@ import (
 	"log"
 	"os"
 
-	"github.com/hashicorp/nomad/api"
+	nomad "github.com/hashicorp/nomad/api"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-const Version = "1.0.0"
+const Version = "1.1.0"
 
 var (
-	app        = kingpin.New("nomad-dtree", "Tool for handling nomad dependencies")
-	job        = app.Flag("job", "Job").Short('j').String()
-	rootFile   = app.Flag("root-ca-file", "RootCA File").Envar("ROOT_CA_FILE").String()
-	certFile   = app.Flag("cert-file", "Cert File").Envar("CERT_FILE").String()
-	keyFile    = app.Flag("key-file", "Key File").Envar("KEY_FILE").String()
-	serverAddr = app.Flag("server-addr", "Server Addr").Short('s').Default("http://127.0.0.1:4646").Envar("SERVER_ADDR").String()
+	app = kingpin.New("nomad-dtree", "Tool for handling nomad dependencies")
 
+	run = app.Command("run", "Run the nomad jobs")
+
+	stop      = app.Command("stop", "Stop the nomad jobs")
+	stopPurge = stop.Flag("purge", "Purge the job").Bool()
+	stopDeep  = stop.Flag("deep", "Stop all dependent jobs").Bool()
+
+	job               = app.Flag("job", "Job").String()
+	rootFile          = app.Flag("root-ca-file", "RootCA File").Envar("ROOT_CA_FILE").String()
+	certFile          = app.Flag("cert-file", "Cert File").Envar("CERT_FILE").String()
+	keyFile           = app.Flag("key-file", "Key File").Envar("KEY_FILE").String()
+	nomadAddr         = app.Flag("nomad-addr", "Nomad Server Addr").Envar("NOMAD_ADDR").Required().String()
 	storeDriver       = app.Flag("store", "store for nomad jobs").Envar("STORE_DRIVER").Default("Filesystem").String()
 	consulAddr        = app.Flag("consul-addr", "Consul Address").Envar("CONSUL_ADDRESS").String()
 	consulDepFilepath = app.Flag("consul-depfile-path", "Consul Dependency Filepath").Envar("CONSUL_DEP_FILEPATH").String()
@@ -29,11 +35,11 @@ var (
 func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	config := &api.Config{
-		Address: *serverAddr,
-		TLSConfig: &api.TLSConfig{
+	config := &nomad.Config{
+		Address: *nomadAddr,
+		TLSConfig: &nomad.TLSConfig{
 			CACert:     *rootFile,
 			ClientCert: *certFile,
 			ClientKey:  *keyFile,
@@ -50,7 +56,13 @@ func main() {
 		FsJobsPath:     *fsJobsPath,
 	}
 
-	runner, err := NewRunner(config, storeConfig)
+	cmdConfig := &CmdConfig{
+		Command:   cmd,
+		StopPurge: *stopPurge,
+		StopDeep:  *stopDeep,
+	}
+
+	runner, err := NewRunner(config, storeConfig, cmdConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

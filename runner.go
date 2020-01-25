@@ -10,18 +10,34 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+const (
+	Run  = "run"
+	Stop = "stop"
+
+	MaxRecursionDepth = 100
+)
+
 type Njob struct {
 	Job  string `json:"job"`
 	Wait int64  `json:"wait"`
+}
+
+type CmdConfig struct {
+	Command   string
+	StopPurge bool
+	StopDeep  bool
 }
 
 type Runner struct {
 	NomadRunner  *NomadRunner
 	Dependencies []Njob
 	StoreClient  Store
+	Cmd          *CmdConfig
 }
 
-func NewRunner(nomadConfig *api.Config, storeConfig *StoreConfig) (*Runner, error) {
+func NewRunner(nomadConfig *api.Config, storeConfig *StoreConfig,
+	cmdConfig *CmdConfig) (*Runner, error) {
+
 	// Create Nomad client
 	nomadRunner, err := NewNomadRunner(nomadConfig)
 	if err != nil {
@@ -38,10 +54,13 @@ func NewRunner(nomadConfig *api.Config, storeConfig *StoreConfig) (*Runner, erro
 	return &Runner{
 		NomadRunner: nomadRunner,
 		StoreClient: storeClient,
+		Cmd:         cmdConfig,
 	}, nil
 }
 
-func (r *Runner) _dependency(currentJob string, body gjson.Result, idx int) ([]Njob, error) {
+func (r *Runner) _dependency(currentJob string, body gjson.Result,
+	idx int) ([]Njob, error) {
+
 	var jobs []Njob
 
 	// NOTE: Infinite recursion
@@ -61,7 +80,8 @@ func (r *Runner) _dependency(currentJob string, body gjson.Result, idx int) ([]N
 
 	if preJob.Str == "" {
 		if postJob.Str == "" {
-			return append(jobs, Njob{Job: currentJob, Wait: currentJobWait.Int()}), nil
+			return append(jobs, Njob{Job: currentJob,
+				Wait: currentJobWait.Int()}), nil
 		}
 		return append(jobs, Njob{Job: currentJob, Wait: currentJobWait.Int()},
 			Njob{Job: postJob.Str, Wait: postJobWait.Int()}), nil
@@ -87,7 +107,7 @@ func (r *Runner) get_dependency(currentJob string) ([]Njob, error) {
 	}
 
 	return r._dependency(currentJob,
-		gjson.Get(string(dep), "dependencies"), 50)
+		gjson.Get(string(dep), "dependencies"), MaxRecursionDepth)
 }
 
 func (r *Runner) run_tree(job string) error {
@@ -98,30 +118,41 @@ func (r *Runner) run_tree(job string) error {
 		return err
 	}
 
-	for idx, j := range jobs {
-		log.Printf("Run job: %+v", j.Job)
+	if r.Cmd.Command == Stop && !r.Cmd.StopDeep {
+		jobs = jobs[len(jobs)-1:]
+	}
 
+	for idx, j := range jobs {
 		nomadJob, err := r.StoreClient.GetJob(j.Job)
 		if err != nil {
 			log.Fatalf("error reading file: %+v", err)
 			return err
 		}
 
-		skip_wait, err := r.NomadRunner.run(nomadJob)
-		if err != nil {
-			log.Printf("Error running job: %+v", err)
-			return err
-		}
-
-		log.Printf("Job Status %+v", skip_wait)
-		if !skip_wait {
-			// If last job is submitted no need to wait
-			if !(idx == len(jobs)-1) {
-				log.Printf("Wait for %+v seconds", j.Wait)
-				time.Sleep(time.Duration(j.Wait) * time.Second)
+		if r.Cmd.Command == Run {
+			skip_wait, err := r.NomadRunner.run(nomadJob)
+			if err != nil {
+				log.Printf("Error running job: %+v", err)
+				return err
 			}
-		} else {
-			log.Printf("Skip Wait, job already running.")
+
+			log.Printf("Job Status %+v", skip_wait)
+
+			if !skip_wait {
+				// If last job is submitted no need to wait
+				if !(idx == len(jobs)-1) {
+					log.Printf("Wait for %+v seconds", j.Wait)
+					time.Sleep(time.Duration(j.Wait) * time.Second)
+				}
+			} else {
+				log.Printf("Skip Wait, job already running.")
+			}
+		} else if r.Cmd.Command == Stop {
+			_, err := r.NomadRunner.stop(nomadJob, r.Cmd.StopPurge)
+			if err != nil {
+				log.Printf("Error stop job: %+v", err)
+				return err
+			}
 		}
 	}
 

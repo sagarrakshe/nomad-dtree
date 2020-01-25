@@ -10,8 +10,9 @@ then
 fi
 
 /tmp/nomad-dtree \
+  run \
   --job postgres \
-  --server-addr ${NOMAD_ADDR}\
+  --nomad-addr ${NOMAD_ADDR}\
   --store filesystem \
   --fs-depfile-path dependency.json \
   --fs-jobs-path jobs

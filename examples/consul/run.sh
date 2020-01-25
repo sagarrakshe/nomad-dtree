@@ -11,8 +11,9 @@ then
 fi
 
 /tmp/nomad-dtree \
+  run \
   --job nginx \
-  --server-addr ${NOMAD_ADDR} \
+  --nomad-addr ${NOMAD_ADDR} \
   --store consul \
   --consul-addr ${CONSUL_ADDR} \
   --consul-depfile-path nomad-dtree/dependency.json \
