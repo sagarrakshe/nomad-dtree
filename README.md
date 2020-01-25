@@ -1,6 +1,9 @@
 
 nomad-dtree
 ===========
+
+[![Build Status](https://travis-ci.com/sagarrakshe/nomad-dtree.png?branch=master)](https://travis-ci.com/sagarrakshe/nomad-dtree)
+
 Nomad doesn't have its own dependency management plugin between the jobs. 
 Especially with rise in the microservices pattern, it becomes difficult to maintain order of deployment using Nomad.
 For eg. Database service must be up before the api service is started.
@@ -37,15 +40,15 @@ nomad jobs:
 
 The dependency file for the above servcies is as follows:
 
-```
+```json
 {
   "dependencies": {
     "nginx": {
       "wait_cond": 5,
       "pre": {
-	      "job": "api"
-	    }
-	  },
+        "job": "api"
+      }
+    },
     "api": {
       "wait_cond": 7,
       "pre": {
@@ -56,7 +59,7 @@ The dependency file for the above servcies is as follows:
       "post": {
         "job": "postgres_setup",
         "wait_cond": 3
-      }
+      },
       "wait_cond": 5
     }
   }
@@ -66,7 +69,7 @@ The dependency file for the above servcies is as follows:
 Now, each block in the `dependencies` json denotes a nomad job. It has three
 parts, consider `api`:
 
-```
+```json
     "api": {
       "wait_cond": 7,
       "pre": {
