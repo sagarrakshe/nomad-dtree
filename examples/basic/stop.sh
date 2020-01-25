@@ -1,6 +1,4 @@
 #!/bin/bash
-
-CONSUL_ADDR="http://localhost:8500"
 NOMAD_ADDR="http://localhost:4646"
 
 if [[ ! -f /tmp/nomad-dtree ]]
@@ -11,10 +9,9 @@ then
 fi
 
 /tmp/nomad-dtree \
-  run \
+  stop \
   --job nginx \
   --nomad-addr ${NOMAD_ADDR} \
-  --store consul \
-  --consul-addr ${CONSUL_ADDR} \
-  --consul-depfile-path nomad-dtree/dependency.json \
-  --consul-jobs-path nomad-dtree/jobs
+  --store filesystem \
+  --fs-depfile-path dependency.json \
+  --fs-jobs-path jobs
