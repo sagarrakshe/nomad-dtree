@@ -7,6 +7,9 @@ env:
 - GO111MODULE=on
 
 before_script:
+  - export GOROOT='/home/travis/.gimme/versions/go1.12.linux.amd64';
+  - export PATH="/home/travis/.gimme/versions/go1.12.linux.amd64/bin:${PATH}";
+  - export GIMME_ENV="/home/travis/.gimme/envs/go1.12.env"
   - wget -qO- https://releases.hashicorp.com/consul/1.6.2/consul_1.6.2_linux_amd64.zip | zcat >> /tmp/consul
   - chmod +x /tmp/consul && /tmp/consul agent -dev &
 
