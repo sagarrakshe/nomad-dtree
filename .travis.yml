@@ -2,11 +2,11 @@ language: generic
 sudo: true
 dist: xenial
 go:
-  - 1.12
+  - "1.12"
+env:
+- GO111MODULE=on
 
-before_install:
-  - gimme 1.12
-  - export GOROOT=/home/travis/.gimme/versions/go1.12.9.linux.amd64
+before_script:
   - wget -qO- https://releases.hashicorp.com/consul/1.6.2/consul_1.6.2_linux_amd64.zip | zcat >> /tmp/consul
   - chmod +x /tmp/consul && /tmp/consul agent -dev &
 
