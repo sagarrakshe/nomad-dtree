@@ -103,16 +103,16 @@ postgres.nomad -> postgres_setup.nomad -> api.nomad -> nginx.nomad
 Similar to `run` you can also `stop` the jobs.
 Stop command has two flags:
 
-- purge (optional): When used, Job will be purged from the system.
-- deep (optional): When used, the mentioned job and all the dependent child jobs will be stopped.
+- **purge** (optional): When used, Job will be purged from the system.
+- **deep** (optional): When used, the mentioned job and all the dependent child jobs will be stopped.
 
 ```
 nomad-dtree \
-	stop --purge --deep \
+  stop --purge --deep \
   --server-addr <nomad-address> \
   --store filesystem \
   --fs-depfile-path <path to dependency json file> \
   --fs-jobs-path <path to directory containing all nomad jobs>
 ```
 
-For more examples check  [Examples](https://github.com/sagarrakshe/nomad-dtree/tree/master/examples)
+For more examples check [Examples](https://github.com/sagarrakshe/nomad-dtree/tree/master/examples)
