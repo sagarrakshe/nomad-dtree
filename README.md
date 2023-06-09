@@ -114,5 +114,4 @@ nomad-dtree \
   --fs-depfile-path <path to dependency json file> \
   --fs-jobs-path <path to directory containing all nomad jobs>
 ```
-
 For more examples check [Examples](https://github.com/sagarrakshe/nomad-dtree/tree/master/examples)
